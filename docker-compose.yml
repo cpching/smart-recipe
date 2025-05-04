@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: smart-recipe-db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: smartrecipe
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+    env_file: .env
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+
+  crawler:
+    build:
+      context: ./crawler
+    env_file: .env
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+    env_file: .env
+    ports:
+      - "3000:3000"
+
+  migrate:
+    image: migrate/migrate:latest  # use an appropriate migrate version
+    command: -path=/migrations -database $DATABASE_URL up
+    volumes:
+      - ./backend/migrations:/migrations
+    env_file: .env
+    depends_on:
+      - db
+
+
+volumes:
+  db_data:

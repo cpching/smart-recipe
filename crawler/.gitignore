@@ -1,0 +1,4 @@
+# Docker named volumes (optional)
+volumes/
+*.pid
+*.sock
