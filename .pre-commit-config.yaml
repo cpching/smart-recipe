@@ -1,0 +1,36 @@
+repos:
+  # 基本的 whitespace / EOF fix
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+
+  # golangci-lint for backend
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.59.0
+    hooks:
+      - id: golangci-lint
+        name: golangci-lint (backend)
+        entry: bash -c "cd backend && golangci-lint run --config .golangci.yaml"
+        language: system
+        types: [go]
+        files: ^backend/
+
+  # golangci-lint for crawler
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.59.0
+    hooks:
+      - id: golangci-lint
+        name: golangci-lint (crawler)
+        entry: bash -c "cd crawler && golangci-lint run --config .golangci.yaml"
+        language: system
+        types: [go]
+        files: ^crawler/
+
+  # eslint for frontend
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.44.0
+    hooks:
+      - id: eslint
+        files: ^frontend/
