@@ -1,13 +1,15 @@
-package auth
+package test
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/cpching/smart-recipe/backend/internal/auth"
 	"github.com/cpching/smart-recipe/backend/internal/domain"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -21,10 +23,18 @@ func (m *mockService) Register(ctx context.Context, email, password string) (dom
 	return domain.User{Email: email, PasswordHash: string(hash)}, nil
 }
 
-func setupTestRouter(service AuthService) *gin.Engine {
+type errorMockService struct{}
+
+func (m *errorMockService) Register(ctx context.Context, email, password string) (domain.User, error) {
+	return domain.User{}, errors.New("email already exists")
+}
+
+func setupTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
-	h := NewHandler(service)
+	s := &mockService{}
+	v := auth.NewValidation()
+	h := auth.NewHandler(s, v)
 
 	r := gin.Default()
 	r.POST("/register", h.Register)
@@ -47,7 +57,7 @@ func setupTestRequestRaw(r *gin.Engine, json string, method string, path string)
 }
 
 func TestRegisterHandler_InvalidJson(t *testing.T) {
-	r := setupTestRouter(&mockService{})
+	r := setupTestRouter()
 	invalidJSON := `{ "email": "test@example.com", "password": abc123-}` // missing quotes around password
 	req, _ := http.NewRequest(http.MethodPost, "/register", bytes.NewBufferString(invalidJSON))
 	req.Header.Set("Content-Type", "application/json")
@@ -59,7 +69,7 @@ func TestRegisterHandler_InvalidJson(t *testing.T) {
 }
 
 func TestRegisterHandler_MissingEmail(t *testing.T) {
-	r := setupTestRouter(&mockService{})
+	r := setupTestRouter()
 	body := map[string]string{
 		"password": "Downl-123",
 	}
@@ -72,7 +82,7 @@ func TestRegisterHandler_MissingEmail(t *testing.T) {
 }
 
 func TestRegisterHandler_MissingPassword(t *testing.T) {
-	r := setupTestRouter(&mockService{})
+	r := setupTestRouter()
 	body := map[string]string{
 		"email": "test@example.com",
 	}
@@ -85,7 +95,7 @@ func TestRegisterHandler_MissingPassword(t *testing.T) {
 }
 
 func TestRegisterHandler_InvalidEmail(t *testing.T) {
-	r := setupTestRouter(&mockService{})
+	r := setupTestRouter()
 	body := map[string]string{
 		"email":    "testexample.com",
 		"password": "Downl-123",
@@ -99,7 +109,7 @@ func TestRegisterHandler_InvalidEmail(t *testing.T) {
 }
 
 func TestRegisterHandler_WeakPassword(t *testing.T) {
-	r := setupTestRouter(&mockService{})
+	r := setupTestRouter()
 	body := map[string]string{
 		"email":    "test@example.com",
 		"password": "123", // too weak
@@ -113,8 +123,27 @@ func TestRegisterHandler_WeakPassword(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "password too weak")
 }
 
+func TestRegisterHandler_EmailAlreadyExists(t *testing.T) {
+	r := setupTestRouter()
+	body := map[string]string{
+		"email":    "test@example.com",
+		"password": "abcABC123-",
+	}
+
+	req := setupTestRequest(r, body, http.MethodPost, "/register")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	req = setupTestRequest(r, body, http.MethodPost, "/register")
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusConflict, w.Code)
+	assert.Contains(t, w.Body.String(), "email already exists")
+}
+
 func TestRegisterHandler_Success(t *testing.T) {
-	r := setupTestRouter(&mockService{})
+	r := setupTestRouter()
 
 	body := map[string]string{
 		"email":    "test@example.com",

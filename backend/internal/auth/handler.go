@@ -4,23 +4,17 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	// "github.com/go-playground/validator/v10"
 )
-
-type RegisterInput struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,password"`
-}
 
 type Handler struct {
 	service   AuthService
 	validator *Validation
 }
 
-func NewHandler(service AuthService) *Handler {
+func NewHandler(service AuthService, validator *Validation) *Handler {
 	return &Handler{
 		service:   service,
-		validator: NewValidation(),
+		validator: validator,
 	}
 }
 
