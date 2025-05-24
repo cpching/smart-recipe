@@ -38,7 +38,11 @@ func (h *Handler) Register(c *gin.Context) {
 
 	user, err := h.service.Register(c.Request.Context(), input.Email, input.Password)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if err.Error() == "Email already exists" {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create user"})
+		}
 		return
 	}
 

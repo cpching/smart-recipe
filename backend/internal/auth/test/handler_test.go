@@ -26,7 +26,7 @@ func (m *mockService) Register(ctx context.Context, email, password string) (dom
 type errorMockService struct{}
 
 func (m *errorMockService) Register(ctx context.Context, email, password string) (domain.User, error) {
-	return domain.User{}, errors.New("email already exists")
+	return domain.User{}, errors.New("Email already exists")
 }
 
 func setupTestRouter() *gin.Engine {
@@ -78,7 +78,7 @@ func TestRegisterHandler_MissingEmail(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "email is required")
+	assert.Contains(t, w.Body.String(), "Email has an invalid format")
 }
 
 func TestRegisterHandler_MissingPassword(t *testing.T) {
@@ -91,7 +91,7 @@ func TestRegisterHandler_MissingPassword(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "password is required")
+	assert.Contains(t, w.Body.String(), "Password is too weak")
 }
 
 func TestRegisterHandler_InvalidEmail(t *testing.T) {
@@ -105,7 +105,7 @@ func TestRegisterHandler_InvalidEmail(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "invalid email format")
+	assert.Contains(t, w.Body.String(), "Email has an invalid format")
 }
 
 func TestRegisterHandler_WeakPassword(t *testing.T) {
@@ -120,11 +120,19 @@ func TestRegisterHandler_WeakPassword(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "password too weak")
+	assert.Contains(t, w.Body.String(), "Password is too weak")
 }
 
 func TestRegisterHandler_EmailAlreadyExists(t *testing.T) {
-	r := setupTestRouter()
+	gin.SetMode(gin.TestMode)
+
+	v := auth.NewValidation()
+	s := &errorMockService{}
+	h := auth.NewHandler(s, v)
+
+	r := gin.Default()
+	r.POST("/register", h.Register)
+
 	body := map[string]string{
 		"email":    "test@example.com",
 		"password": "abcABC123-",
@@ -134,12 +142,8 @@ func TestRegisterHandler_EmailAlreadyExists(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	req = setupTestRequest(r, body, http.MethodPost, "/register")
-	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
 	assert.Equal(t, http.StatusConflict, w.Code)
-	assert.Contains(t, w.Body.String(), "email already exists")
+	assert.Contains(t, w.Body.String(), "Email already exists")
 }
 
 func TestRegisterHandler_Success(t *testing.T) {
@@ -154,5 +158,5 @@ func TestRegisterHandler_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusCreated, w.Code)
 }
