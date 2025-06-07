@@ -1,6 +1,6 @@
 package auth
 
 type RegisterInput struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,password"`
+	Email    string `json:"email" example:"user@example.com" validate:"required,email"`
+	Password string `json:"password" example:"Secret123!" validate:"required,password"`
 }

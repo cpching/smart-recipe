@@ -1,0 +1,56 @@
+definitions:
+  auth.RegisterInput:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: Secret123!
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  domain.User:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      lastLoginAt:
+        type: string
+      passwordHash:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API for Smart Recipe backend
+  title: Smart Recipe API
+  version: "1.0"
+paths:
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user in the system
+      parameters:
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.User'
+      summary: Create user
+      tags:
+      - users
+swagger: "2.0"

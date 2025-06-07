@@ -8,7 +8,7 @@ repos:
 
   # golangci-lint for backend
   - repo: https://github.com/golangci/golangci-lint
-    rev: v1.59.0
+    rev: v2.1.6
     hooks:
       - id: golangci-lint
         name: golangci-lint (backend)
@@ -19,7 +19,7 @@ repos:
 
   # golangci-lint for crawler
   - repo: https://github.com/golangci/golangci-lint
-    rev: v1.59.0
+    rev: v2.1.6
     hooks:
       - id: golangci-lint
         name: golangci-lint (crawler)

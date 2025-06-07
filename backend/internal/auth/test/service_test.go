@@ -4,42 +4,75 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cpching/smart-recipe/backend/internal/auth"
 	"github.com/cpching/smart-recipe/backend/internal/domain"
-	// "github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
-type fakeRepo struct{}
-
-func (f *fakeRepo) CreateUser(ctx context.Context, u domain.User) (domain.User, error) {
-	u.ID = 1
-	u.CreatedAt = "2025-05-03T12:00:00"
-	return u, nil
+type mockRepo struct {
+	mock.Mock
 }
 
-func (f *fakeRepo) GetByEmail(ctx context.Context, email string) (domain.User, error) {
-	return domain.User{}, nil
+func (m *mockRepo) CreateUser(ctx context.Context, user domain.User) (domain.User, error) {
+	args := m.Called(ctx, user)
+	if args.Get(0) == nil {
+		return domain.User{}, args.Error(1)
+	}
+	return args.Get(0).(domain.User), args.Error(1)
 }
 
-func TestRegister_InvalidEmail(t *testing.T) {
-	// svc := NewAuthService(&fakeRepo{})
+func (m *mockRepo) GetByEmail(ctx context.Context, email string) (domain.User, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) == nil {
+		return domain.User{}, args.Error(1)
+	}
+	return args.Get(0).(domain.User), args.Error(1)
 }
 
-func TestRegister_WeakPassword(t *testing.T) {
-	// svc := NewAuthService(&fakeRepo{})
-	// _, err := svc.Register(context.Background(), "foo@example.com", "short")
-	// assert.ErrorIs(t, err, ErrWeakPassword)
-	// _, err = svc.Register(context.Background(), "foo@example.com", "weak0123")
-	// assert.ErrorIs(t, err, ErrWeakPassword)
-	// _, err = svc.Register(context.Background(), "foo@example.com", "suk-suk-suk")
-	// assert.NoError(t, err)
-}
+func TestRegister(t *testing.T) {
+	tests := []struct {
+		name        string
+		email       string
+		password    string
+		setupRepo   func(*mockRepo)
+		expectError error
+	}{
+		{
+			name:     "successful register",
+			email:    "test@example.com",
+			password: "Abc-123-456",
+			setupRepo: func(r *mockRepo) {
+				r.On("GetByEmail", mock.Anything, "test@example.com").Return(nil, nil)
+				r.On("CreateUser", mock.Anything, mock.Anything).Return(domain.User{Email: "test@example.com"}, nil)
+			},
+			expectError: nil,
+		}, {
+			name:     "duplicate email",
+			email:    "taken@example.com",
+			password: "Abc-123-456",
+			setupRepo: func(r *mockRepo) {
+				r.On("GetByEmail", mock.Anything, "taken@example.com").Return(domain.User{Email: "taken@example.com"}, nil)
+			},
+			expectError: auth.ErrEmailAlreadyExists,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := new(mockRepo)
+			if tt.setupRepo != nil {
+				tt.setupRepo(repo)
+			}
+			s := auth.NewAuthService(repo)
+			_, err := s.Register(context.Background(), tt.email, tt.password)
+			if tt.expectError != nil {
+				assert.ErrorIs(t, err, tt.expectError)
+			} else {
+				assert.NoError(t, err)
+			}
 
-func TestRegister_Success(t *testing.T) {
-	// svc := NewAuthService(&fakeRepo{})
-	// user, err := svc.Register(context.Background(), "foo@example.com", "Strong-Password1")
-	// assert.ErrorIs(t, err, ErrWeakPassword)
-	// assert.NoError(t, err)
-	// assert.Equal(t, 1, user.ID)
-	// assert.Equal(t, "foo@example.com", user.Email)
-	// assert.NotEmpty(t, user.PasswordHash)
+			repo.AssertExpectations(t)
+		})
+	}
 }

@@ -49,12 +49,12 @@ func setupTestRequest(r *gin.Engine, body map[string]string, method string, path
 	return req
 }
 
-func setupTestRequestRaw(r *gin.Engine, json string, method string, path string) *http.Request {
-	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBufferString(json))
-	req.Header.Set("Content-Type", "application/json")
-
-	return req
-}
+// func setupTestRequestRaw(r *gin.Engine, json string, method string, path string) *http.Request {
+// 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBufferString(json))
+// 	req.Header.Set("Content-Type", "application/json")
+//
+// 	return req
+// }
 
 func TestRegisterHandler_InvalidJson(t *testing.T) {
 	r := setupTestRouter()

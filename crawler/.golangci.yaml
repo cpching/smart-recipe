@@ -1,14 +1,14 @@
-run:
-  timeout: 2m
-  tests: false
+version: 2
 
 linters:
   enable:
     - govet
-    - staticcheck
     - errcheck
-    - gofmt
-    - goimports
+    - staticcheck
+    - unused
+
+run:
+  timeout: 2m
 
 issues:
   exclude-use-default: false

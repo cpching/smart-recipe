@@ -2,13 +2,14 @@ package auth
 
 import (
 	"errors"
-	validator "github.com/go-playground/validator/v10"
 	"regexp"
+
+	validator "github.com/go-playground/validator/v10"
 )
 
 var (
-	ErrInvalidEmail = errors.New("Email has an invalid format")
-	ErrWeakPassword = errors.New("Password is too weak")
+	ErrInvalidEmail = errors.New("EMAIL HAS AN INVALID FORMAT")
+	ErrWeakPassword = errors.New("PASSWORD IS TOO WEAK")
 )
 
 // Validation contains
@@ -18,8 +19,15 @@ type Validation struct {
 
 func NewValidation() *Validation {
 	validate := validator.New()
-	validate.RegisterValidation("email", validateEmail)
-	validate.RegisterValidation("password", validatePassword)
+
+	if err := validate.RegisterValidation("email", validateEmail); err != nil {
+		panic("failed to register email validator: " + err.Error())
+	}
+
+	if err := validate.RegisterValidation("password", validatePassword); err != nil {
+		panic("failed to register password validator: " + err.Error())
+	}
+
 	return &Validation{validate}
 }
 
